@@ -1,8 +1,11 @@
 package undo.actions;
 
-import javafx.util.Pair;
-
 public interface Action<T> {
+
+    @SuppressWarnings("SpellCheckingInspection")
+    enum ActionType { CHANGELABELS }
+
+    ActionType getType();
 
     String getDescription();
 
@@ -10,15 +13,16 @@ public interface Action<T> {
 
     T undo(T t);
 
-    Pair<Action, Action> reconcile(Action a, Action b);
-
-    boolean isNoOp();
-
     // Returns an inverse of the Action.
     @SuppressWarnings("unchecked")
     default Action invert() {
         Action that = this;
         return new Action<T>() {
+            @Override
+            public ActionType getType() {
+                return that.getType();
+            }
+
             @Override
             public String getDescription() {
                 return that.getDescription();
@@ -32,16 +36,6 @@ public interface Action<T> {
             @Override
             public T undo(T t) {
                 return (T) that.act(t);
-            }
-
-            @Override
-            public Pair<Action, Action> reconcile(Action a, Action b) {
-                return that.reconcile(a, b);
-            }
-
-            @Override
-            public boolean isNoOp() {
-                return that.isNoOp();
             }
         };
     }

@@ -3,7 +3,6 @@ package backend;
 import backend.resource.Model;
 import backend.resource.MultiModel;
 import backend.resource.TurboIssue;
-import backend.resource.TurboLabel;
 import filter.expression.FilterExpression;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.logging.log4j.Logger;
@@ -11,7 +10,6 @@ import prefs.Preferences;
 import ui.TestController;
 import ui.UI;
 import undo.actions.Action;
-import undo.actions.ChangeLabelsAction;
 import util.Futures;
 import util.HTLog;
 import util.Utility;
@@ -19,7 +17,10 @@ import util.events.RepoOpenedEvent;
 import util.events.testevents.ClearLogicModelEvent;
 import util.events.testevents.ClearLogicModelEventHandler;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -187,29 +188,20 @@ public class Logic {
         return repoIO.getRateLimitResetTime();
     }
 
-    // Applies action on issue in UI
-    @SuppressWarnings("unchecked")
-    public void actOnIssueUI(TurboIssue issue, Action action) {
-        logger.info("Applying " + action.getDescription() + " on " + issue + " in UI");
-        action.act(issue);
-        refreshUI();
-    }
-
-    // Applies action on issue in GitHub, returns false if it fails
-    @SuppressWarnings("unchecked")
-    public CompletableFuture<Boolean> actOnIssueRepo(TurboIssue issue, Action action) {
+    // Replaces labels of issue on GitHub, returns false if it fails
+    public CompletableFuture<Boolean> replaceIssueLabels(TurboIssue issue, Action<TurboIssue> action) {
         logger.info("Applying " + action.getDescription() + " on " + issue + " in GitHub");
-        if (action.getClass().equals(ChangeLabelsAction.class)) {
-            ChangeLabelsAction changeAction = (ChangeLabelsAction) action;
-            return repoIO.replaceIssueLabels(issue, changeAction.act(changeAction.getOriginalIssue()).getLabels())
-                            .thenApply(e -> true)
-                            .exceptionally(e -> {
-                                logger.error(e.getLocalizedMessage(), e);
-                                return false;
-                            });
-        } else {
-            return CompletableFuture.completedFuture(false);
-        }
+        return repoIO.replaceIssueLabels(issue, action.act(new TurboIssue(issue)).getLabels())
+                .thenApply(labels -> {
+                    logger.info("Applying " + action.getDescription() + " on " + issue + " in UI");
+                    issue.setLabels(labels);
+                    refreshUI();
+                    return true;
+                })
+                .exceptionally(e -> {
+                    logger.error(e.getLocalizedMessage(), e);
+                    return false;
+                });
     }
 
     /**
