@@ -346,13 +346,14 @@ public class LabelPickerUILogic {
                 .collect(Collectors.toList());
 
         // try to highlight labels that begin with match first
-        matches.stream()
+        Optional<PickerLabel> labelStartingWithMatch =  matches.stream()
                 .filter(label -> Utility.startsWithIgnoreCase(label.getName(), match))
-                .findFirst()
-                .ifPresent(label -> label.setIsHighlighted(true));
+                .findFirst();
 
-        // if not then highlight first matching label
-        if (!hasHighlightedLabel()) {
+        if (labelStartingWithMatch.isPresent()) {
+            labelStartingWithMatch.get().setIsHighlighted(true);
+        } else {
+            // if not then highlight first matching label
             matches.stream()
                     .findFirst()
                     .ifPresent(label -> label.setIsHighlighted(true));
