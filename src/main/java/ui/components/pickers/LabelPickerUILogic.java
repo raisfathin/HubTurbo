@@ -148,45 +148,50 @@ public class LabelPickerUILogic {
                         .stream()
                         .filter(TurboLabel::isExclusive)
                         .filter(label -> label.getGroup().get().equals(group))
-                        .forEach(label -> updateTopLabels(label.getActualName(), false));
-                updateTopLabels(name, true);
+                        .forEach(label -> removeFromTopLabels(label.getActualName()));
+                addToTopLabels(name);
             } else {
-                updateTopLabels(name, !resultList.get(name));
+                if (resultList.get(name)) {
+                    removeFromTopLabels(name);
+                } else {
+                    addToTopLabels(name);
+                }
             }
         }
     }
 
-    private void updateTopLabels(String name, boolean isAdd) {
+    private void addToTopLabels(String name) {
         // adds new labels to the end of the list
-        resultList.put(name, isAdd); // update resultList first
-        if (isAdd) {
-            if (issue.getLabels().contains(name)) {
-                topLabels.stream()
-                        .filter(label -> label.getActualName().equals(name))
-                        .forEach(label -> {
-                            label.setIsRemoved(false);
-                            label.setIsFaded(false);
-                        });
-            } else {
-                allLabels.stream()
-                        .filter(label -> label.getActualName().equals(name))
-                        .filter(label -> resultList.get(label.getActualName()))
-                        .filter(label -> !isInTopLabels(label.getActualName()))
-                        .findFirst()
-                        .ifPresent(label -> topLabels.add(new PickerLabel(label, this, true)));
-            }
-        } else {
+        resultList.put(name, true); // update resultList first
+        if (issue.getLabels().contains(name)) {
             topLabels.stream()
                     .filter(label -> label.getActualName().equals(name))
-                    .findFirst()
-                    .ifPresent(label -> {
-                        if (issue.getLabels().contains(name)) {
-                            label.setIsRemoved(true);
-                        } else {
-                            topLabels.remove(label);
-                        }
+                    .forEach(label -> {
+                        label.setIsRemoved(false);
+                        label.setIsFaded(false);
                     });
+        } else {
+            allLabels.stream()
+                    .filter(label -> label.getActualName().equals(name))
+                    .filter(label -> resultList.get(label.getActualName()))
+                    .filter(label -> !isInTopLabels(label.getActualName()))
+                    .findFirst()
+                    .ifPresent(label -> topLabels.add(new PickerLabel(label, this, true)));
         }
+    }
+
+    private void removeFromTopLabels(String name) {
+        resultList.put(name, false);
+        topLabels.stream()
+                .filter(label -> label.getActualName().equals(name))
+                .findFirst()
+                .ifPresent(label -> {
+                    if (issue.getLabels().contains(name)) {
+                        label.setIsRemoved(true);
+                    } else {
+                        topLabels.remove(label);
+                    }
+                });
     }
 
     private boolean isInTopLabels(String name) {
