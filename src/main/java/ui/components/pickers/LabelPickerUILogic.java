@@ -15,8 +15,8 @@ public class LabelPickerUILogic {
     private List<TurboLabel> allLabels;
     private final List<PickerLabel> topLabels = new ArrayList<>();
     private List<PickerLabel> bottomLabels;
-    private final Map<String, Boolean> groups = new HashMap<>();
-    private final Map<String, Boolean> resultList = new HashMap<>();
+    private final Map<String, Boolean> groups;
+    private final Map<String, Boolean> resultList;
     private Optional<String> targetLabel = Optional.empty();
 
     // Used for multiple spaces
@@ -26,8 +26,10 @@ public class LabelPickerUILogic {
     LabelPickerUILogic(TurboIssue issue, List<TurboLabel> repoLabels, LabelPickerDialog dialog) {
         this.issue = issue;
         this.dialog = dialog;
-        populateAllLabels(repoLabels);
-        addExistingLabels();
+        this.allLabels = populateAllLabels(repoLabels);
+        this.groups = initializeGroups(repoLabels);
+        this.resultList = initializeResultList(repoLabels);
+        this.topLabels.addAll(determineExistingLabels(issue, allLabels));
         updateBottomLabels("");
         populatePanes();
     }
@@ -35,24 +37,33 @@ public class LabelPickerUILogic {
     public LabelPickerUILogic(TurboIssue issue, List<TurboLabel> repoLabels) {
         this.issue = issue;
         this.dialog = null;
-        populateAllLabels(repoLabels);
-        addExistingLabels();
+        this.allLabels = populateAllLabels(repoLabels);
+        this.groups = initializeGroups(repoLabels);
+        this.resultList = initializeResultList(repoLabels);
+        this.topLabels.addAll(determineExistingLabels(issue, allLabels));
         updateBottomLabels("");
         populatePanes();
     }
 
-    private void populateAllLabels(List<TurboLabel> repoLabels) {
-        this.allLabels = new ArrayList<>(repoLabels);
-        Collections.sort(this.allLabels);
-        // populate resultList by going through repoLabels and seeing which ones currently exist
-        // in issue.getLabels()
-        repoLabels.forEach(label -> {
-            // matching with exact labels so no need to worry about capitalisation
-            resultList.put(label.getActualName(), issue.getLabels().contains(label.getActualName()));
-            if (label.getGroup().isPresent() && !groups.containsKey(label.getGroup().get())) {
-                groups.put(label.getGroup().get(), label.isExclusive());
-            }
-        });
+    private List<TurboLabel> populateAllLabels(List<TurboLabel> repoLabels) {
+        return repoLabels.stream()
+                .sorted()
+                .collect(Collectors.toList());
+    }
+
+    private Map<String, Boolean> initializeGroups(List<TurboLabel> repoLabels) {
+        return repoLabels.stream()
+                .collect(Collectors.toMap(
+                        TurboLabel::getActualName,
+                        label -> issue.getLabels().contains(label.getActualName())));
+    }
+
+    private Map<String, Boolean> initializeResultList(List<TurboLabel> repoLabels) {
+        return repoLabels.stream()
+                .filter(label -> label.getGroup().isPresent() && !groups.containsKey(label.getGroup().get()))
+                .collect(Collectors.toMap(
+                        label -> label.getGroup().get(),
+                        TurboLabel::isExclusive));
     }
 
     private void populatePanes() {
@@ -118,11 +129,12 @@ public class LabelPickerUILogic {
     @SuppressWarnings("unused")
     private void ______TOP_PANE______() {}
 
-    private void addExistingLabels() {
+    private List<PickerLabel> determineExistingLabels(TurboIssue issue, List<TurboLabel> allLabels) {
         // used once to populate topLabels at the start
-        allLabels.stream()
+        return allLabels.stream()
                 .filter(label -> issue.getLabels().contains(label.getActualName()))
-                .forEach(label -> topLabels.add(new PickerLabel(label, this, true)));
+                .map(label -> new PickerLabel(label, this, true))
+                .collect(Collectors.toList());
     }
 
     private void preProcessAndUpdateTopLabels(String name) {
