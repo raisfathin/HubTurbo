@@ -84,42 +84,47 @@ public class LabelPickerUILogic {
         }
     }
 
-    @SuppressWarnings("PMD")
     public void processTextFieldChange(String text) {
         String[] textArray = text.split(" ");
         if (textArray.length > 0) {
             String query = textArray[textArray.length - 1];
             if (previousNumberOfActions != textArray.length || !query.equals(lastAction)) {
-                previousNumberOfActions = textArray.length;
-                lastAction = query;
-                boolean isBottomLabelsUpdated = false;
-
-                // group check
-                // TODO rewrite this to remove some nesting, and the PMD warning
-                if (TurboLabel.getDelimiter(query).isPresent()) {
-                    String delimiter = TurboLabel.getDelimiter(query).get();
-                    String[] queryArray = query.split(Pattern.quote(delimiter));
-                    if (queryArray.length == 1) {
-                        isBottomLabelsUpdated = true;
-                        updateBottomLabels(queryArray[0], "");
-                    } else if (queryArray.length == 2) {
-                        isBottomLabelsUpdated = true;
-                        updateBottomLabels(queryArray[0], queryArray[1]);
-                    }
-                }
-
-                if (!isBottomLabelsUpdated) {
-                    updateBottomLabels(query);
-                }
-
-                if (hasHighlightedLabel()) {
-                    addRemovePossibleLabel(getHighlightedLabelName().get().getActualName());
-                } else {
-                    addRemovePossibleLabel("");
-                }
-                populatePanes();
+                processUserInput(textArray, query);
             }
         }
+    }
+
+    private void processUserInput(String[] textArray, String query) {
+        previousNumberOfActions = textArray.length;
+        lastAction = query;
+
+        boolean appliedToGroup = applyToGroup(query);
+        if (!appliedToGroup) {
+            updateBottomLabels(query);
+        }
+
+        if (hasHighlightedLabel()) {
+            addRemovePossibleLabel(getHighlightedLabelName().get().getActualName());
+        } else {
+            addRemovePossibleLabel("");
+        }
+
+        populatePanes();
+    }
+
+    private boolean applyToGroup(String query) {
+        if (TurboLabel.getDelimiter(query).isPresent()) {
+            String delimiter = TurboLabel.getDelimiter(query).get();
+            String[] queryArray = query.split(Pattern.quote(delimiter));
+            if (queryArray.length == 1) {
+                updateBottomLabels(queryArray[0], "");
+                return true;
+            } else if (queryArray.length == 2) {
+                updateBottomLabels(queryArray[0], queryArray[1]);
+                return true;
+            }
+        }
+        return false;
     }
 
     /*
