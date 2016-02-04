@@ -12,7 +12,7 @@ public class LabelPickerUILogic {
 
     private final TurboIssue issue;
     private final LabelPickerDialog dialog;
-    private List<TurboLabel> allLabels;
+    private final List<TurboLabel> allLabels;
     private final List<PickerLabel> topLabels = new ArrayList<>();
     private List<PickerLabel> bottomLabels;
     private final Map<String, Boolean> groups;
