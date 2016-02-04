@@ -203,30 +203,7 @@ public class LabelPickerUILogic {
     }
 
     private void addRemovePossibleLabel(String name) {
-        // Deletes previous selection
-        if (targetLabel.isPresent()) {
-            // if there's a previous possible selection, delete it
-            // targetLabel can be
-            topLabels.stream()
-                    .filter(label -> label.getActualName().equals(targetLabel.get()))
-                    .findFirst()
-                    .ifPresent(label -> {
-                        if (issue.getLabels().contains(targetLabel.get()) || resultList.get(targetLabel.get())) {
-                            // if it is an existing label toggle fade and strike through
-                            label.setIsHighlighted(false);
-                            label.setIsFaded(false);
-                            if (resultList.get(label.getActualName())) {
-                                label.setIsRemoved(false);
-                            } else {
-                                label.setIsRemoved(true);
-                            }
-                        } else {
-                            // if not then remove it
-                            topLabels.remove(label);
-                        }
-                    });
-            targetLabel = Optional.empty();
-        }
+        removePreviousSelection();
 
         if (!name.isEmpty()) {
             // Try to add current selection
@@ -257,6 +234,32 @@ public class LabelPickerUILogic {
                                 new PickerLabel(label, this, false, true, false, true, true)));
             }
             targetLabel = Optional.of(name);
+        }
+    }
+
+    private void removePreviousSelection() {
+        if (targetLabel.isPresent()) {
+            // if there's a previous possible selection, delete it
+            // targetLabel can be
+            topLabels.stream()
+                    .filter(label -> label.getActualName().equals(targetLabel.get()))
+                    .findFirst()
+                    .ifPresent(label -> {
+                        if (issue.getLabels().contains(targetLabel.get()) || resultList.get(targetLabel.get())) {
+                            // if it is an existing label toggle fade and strike through
+                            label.setIsHighlighted(false);
+                            label.setIsFaded(false);
+                            if (resultList.get(label.getActualName())) {
+                                label.setIsRemoved(false);
+                            } else {
+                                label.setIsRemoved(true);
+                            }
+                        } else {
+                            // if not then remove it
+                            topLabels.remove(label);
+                        }
+                    });
+            targetLabel = Optional.empty();
         }
     }
 
